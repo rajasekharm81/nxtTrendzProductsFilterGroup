@@ -65,14 +65,20 @@ const ratingsList = [
   },
 ]
 
+const fetchingStatusList = {
+  success: 'SUCCESS',
+  inprogress: 'IN-PROGRESS',
+  failed: 'FAILED',
+}
+
 class AllProductsSection extends Component {
   state = {
     productsList: [],
-    isLoading: false,
     activeOptionId: sortbyOptions[0].optionId,
     activeCategoryId: '',
     activeratingId: '',
     onChangeSearchInput: '',
+    fetchingStatus: fetchingStatusList.success,
   }
 
   componentDidMount() {
@@ -91,9 +97,20 @@ class AllProductsSection extends Component {
     this.setState({onChangeSearchInput: searchText}, this.getProducts)
   }
 
+  resetFilters = () => {
+    this.setState(
+      {
+        activeCategoryId: '',
+        activeratingId: '',
+        onChangeSearchInput: '',
+      },
+      this.getProducts,
+    )
+  }
+
   getProducts = async () => {
     this.setState({
-      isLoading: true,
+      fetchingStatus: fetchingStatusList.inprogress,
     })
     const jwtToken = Cookies.get('jwt_token')
 
@@ -103,7 +120,7 @@ class AllProductsSection extends Component {
       onChangeSearchInput,
       activeratingId,
     } = this.state
-    let apiUrl = `https://apis.ccbp.in/products?sort_by=${activeOptionId}&title_search=${onChangeSearchInput}`
+    let apiUrl = `https://apis.ccbp.in/products?sort_by=${activeOptionId}&rating=${activeratingId}&category=${activeCategoryId}&title_search=${onChangeSearchInput}`
     if (activeCategoryId !== '' && activeratingId !== '') {
       apiUrl = `https://apis.ccbp.in/products?rating=${activeratingId}&category=${activeCategoryId}&sort_by=${activeOptionId}&title_search=${onChangeSearchInput}`
     } else if (activeCategoryId === '' && activeratingId !== '') {
@@ -111,8 +128,6 @@ class AllProductsSection extends Component {
     } else if (activeCategoryId !== '' && activeratingId === '') {
       apiUrl = `https://apis.ccbp.in/products?category=${activeCategoryId}&sort_by=${activeOptionId}&title_search=${onChangeSearchInput}`
     }
-
-    console.log(apiUrl)
     const options = {
       headers: {
         Authorization: `Bearer ${jwtToken}`,
@@ -131,9 +146,11 @@ class AllProductsSection extends Component {
         rating: product.rating,
       }))
       this.setState({
+        fetchingStatus: fetchingStatusList.success,
         productsList: updatedData,
-        isLoading: false,
       })
+    } else {
+      this.setState({fetchingStatus: fetchingStatusList.failed})
     }
   }
 
@@ -143,20 +160,30 @@ class AllProductsSection extends Component {
 
   renderProductsList = () => {
     const {productsList, activeOptionId} = this.state
-
-    // TODO: Add No Products View
+    if (productsList.length !== 0) {
+      return (
+        <div className="all-products-container">
+          <ProductsHeader
+            activeOptionId={activeOptionId}
+            sortbyOptions={sortbyOptions}
+            changeSortby={this.changeSortby}
+          />
+          <ul className="products-list">
+            {productsList.map(product => (
+              <ProductCard productData={product} key={product.id} />
+            ))}
+          </ul>
+        </div>
+      )
+    }
     return (
-      <div className="all-products-container">
-        <ProductsHeader
-          activeOptionId={activeOptionId}
-          sortbyOptions={sortbyOptions}
-          changeSortby={this.changeSortby}
+      <div className="noProductsContainer">
+        <img
+          src="https://assets.ccbp.in/frontend/react-js/nxt-trendz/nxt-trendz-no-products-view.png"
+          alt="no products"
         />
-        <ul className="products-list">
-          {productsList.map(product => (
-            <ProductCard productData={product} key={product.id} />
-          ))}
-        </ul>
+        <h2>No products found</h2>
+        <p>Did not found any products. try other filters</p>
       </div>
     )
   }
@@ -167,14 +194,34 @@ class AllProductsSection extends Component {
     </div>
   )
 
-  // TODO: Add failure view
+  renderFailureView = () => (
+    <div>
+      <img
+        src="https://assets.ccbp.in/frontend/react-js/nxt-trendz/nxt-trendz-products-error-view.png"
+        alt="products failure"
+      />
+    </div>
+  )
+
+  renderContent = () => {
+    const {fetchingStatus} = this.state
+    switch (fetchingStatus) {
+      case fetchingStatusList.success:
+        return this.renderProductsList()
+      case fetchingStatusList.failed:
+        return this.renderFailureView()
+      case fetchingStatusList.inprogress:
+        return this.renderLoader()
+      default:
+    }
+    return this.renderLoader()
+  }
 
   render() {
-    const {isLoading, activeCategory} = this.state
+    const {activeCategory} = this.state
 
     return (
       <div className="all-products-section">
-        {/* TODO: Update the below element */}
         <FiltersGroup
           categoryOptions={categoryOptions}
           ratingsList={ratingsList}
@@ -182,9 +229,10 @@ class AllProductsSection extends Component {
           activeCategory={activeCategory}
           onRatingChange={this.onRatingChange}
           onChangeSearchInput={this.onChangeSearchInput}
+          resetFilters={this.resetFilters}
         />
 
-        {isLoading ? this.renderLoader() : this.renderProductsList()}
+        {this.renderContent()}
       </div>
     )
   }

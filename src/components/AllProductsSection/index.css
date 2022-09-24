@@ -48,3 +48,11 @@
   flex-wrap: wrap;
   padding-left: 0;
 }
+
+.noProductsContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-right: 30vh;
+}

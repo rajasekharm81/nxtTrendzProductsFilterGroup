@@ -8,6 +8,7 @@ const FiltersGroup = props => {
     onRatingChange,
     ratingsList,
     onChangeSearchInput,
+    resetFilters,
   } = props
 
   const sendCategoryId = event => {
@@ -19,14 +20,20 @@ const FiltersGroup = props => {
   }
 
   const sendSearchInput = event => {
-    onChangeSearchInput(event.target.value)
+    if (event.key === 'Enter') {
+      onChangeSearchInput(event.target.value)
+    }
+  }
+
+  const clearfilter = () => {
+    resetFilters()
   }
 
   return (
     <div className="filters-group-container">
       <div className="searchContainer">
         <input
-          onChange={sendSearchInput}
+          onKeyDown={sendSearchInput}
           className="searchInput"
           type="search"
           placeholder="Search"
@@ -34,14 +41,14 @@ const FiltersGroup = props => {
         <AiOutlineSearch />
       </div>
       <div className="refinersContainer">
-        <h2>Category</h2>
-        <ul className="cateroryOptions">
+        <h1>Category</h1>
+        <div className="cateroryOptions">
           {categoryOptions.map(each => (
-            <li id={each.categoryId} onClick={sendCategoryId}>
+            <p id={each.categoryId} onClick={sendCategoryId}>
               {each.name}
-            </li>
+            </p>
           ))}
-        </ul>
+        </div>
         <h2>Rating</h2>
         <ul>
           {ratingsList.map(each => (
@@ -51,11 +58,14 @@ const FiltersGroup = props => {
                 id={each.ratingId}
                 className="ratingImage"
                 src={each.imageUrl}
-                alt={each.ratingId}
+                alt={`rating ${each.ratingId}`}
               />
             </li>
           ))}
         </ul>
+        <button type="button" onClick={clearfilter}>
+          Clear Filters
+        </button>
       </div>
     </div>
   )
